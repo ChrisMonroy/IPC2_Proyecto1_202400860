@@ -59,3 +59,44 @@ class Matriz:
         for j in range(self.columnas):
             sensor = encabezado_columnas.obtener(j)
             th_cols += f'<td border="1" bgcolor="#f5f7fa"><b>{esc(sensor.id)}</b></td>'
+
+        filas_html = ""
+        for i in range(self.filas):
+           estacion = encabezado_filas.obtener(i)
+           filas_html += f'<tr><td border="1" bgcolor="#f5f7fa"><b>{esc(estacion.id)}</b></td>'
+        for j in range(self.columnas):
+            frecuencia = self.ObtenerFrecuencia(i, j)
+            valor = esc(frecuencia.valor)
+            # Color de celda según valor
+            bg = "#ffffff" if valor == "0" else "#ffd6d6"  # blanco=0, rosado=>0 (ajustable)
+            filas_html += f'<td border="1" bgcolor="{bg}">{valor}</td>'
+        filas_html += '</tr>'
+
+        # Armar tabla HTML-like
+        tabla = f'''
+          <<table BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <tr><td>
+          <table BORDER="1" CELLBORDER="1" CELLSPACING="0">
+          <tr>{th_cols}</tr>
+              {filas_html}
+          </table>
+          </td></tr>
+          </table>>
+        '''
+
+        dot = graphviz.Digraph(comment=str(titulo))
+        dot.attr(rankdir='LR')
+        # Usamos shape=plain para que respete el label HTML
+        dot.node('matriz_tabla', label=tabla, shape='plain')
+
+         # Título como nodo separado arriba (opcional)
+        dot.node('titulo', label=str(titulo), shape='box', style='filled', fillcolor='lightgreen')
+        dot.edge('titulo', 'matriz_tabla', style='invis')  # invisible para ordenar verticalmente
+
+         # Guardar DOT en UTF-8
+        with open(f'{nombre_archivo}.dot', 'w', encoding='utf-8') as f:
+             f.write(dot.source)
+
+        print(f"Archivo DOT generado: {nombre_archivo}.dot")
+        print(f"Para generar PNG: dot -Tpng {nombre_archivo}.dot -o {nombre_archivo}.png")
+        return dot.source
