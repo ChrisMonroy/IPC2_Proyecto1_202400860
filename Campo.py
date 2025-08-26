@@ -1,3 +1,4 @@
+from Fre import Frecuencia
 from ListaSimple import ListaEnlazada
 from Matriz import Matriz
 
@@ -11,7 +12,7 @@ class Campo:
         self.matriz_suelo = None
         self.matriz_cultivo = None  
 
-        def CrearMatriz(self):
+        def crearMatriz(self):
             numero_estaciones = self.estaciones.longitud
             numero_sensores_suelo = self.sensores_del_suelo.longitud
             numero_sensores_cultivo = self.sensores_del_cultivo.longitud
@@ -47,6 +48,75 @@ class Campo:
         if self.matriz_cultivo:
             titulo_cultivo = f"Matriz de Cultivo - Campo {self.id}"
             self.matriz_cultivo.mostrar(titulo_cultivo, self.estaciones, self.sensores_cultivo)
+
+    def agrupar_estaciones(self):
+        patrones_suelo = {}
+        patrones_cultivo = {}
+
+        # Obtener patrón por estación para suelo
+        for i in range(self.estaciones.longitud):
+            estacion = self.estaciones.obtener(i)
+            fila_suelo = ""
+            for j in range(self.sensores_del_suelo.longitud):
+                freq = self.matriz_suelo.obtener_frecuencia(i, j)
+                fila_suelo += f"{freq.valor if freq else 0}_"
+            patrones_suelo[estacion.id_estacion] = fila_suelo.rstrip("_")
+
+        # Obtener patrón por estación para cultivo
+        for i in range(self.estaciones.longitud):
+            estacion = self.estaciones.obtener(i)
+            fila_cultivo = ""
+            for j in range(self.sensores_del_cultivo.longitud):
+                freq = self.matriz_cultivo.obtener_frecuencia(i, j)
+                fila_cultivo += f"{freq.valor if freq else 0}_"
+            patrones_cultivo[estacion.id_estacion] = fila_cultivo.rstrip("_")
+
+        # Agrupar
+        grupos = {}
+        for id_est in patrones_suelo:
+            key = f"{patrones_suelo[id_est]}|{patrones_cultivo[id_est]}"
+            if key not in grupos:
+                grupos[key] = []
+            grupos[key].append(id_est)
+
+        return list(grupos.values())
+    
+    def crear_matrices_reducidas(self):
+        grupos = self.agrupar_estaciones()
+        n_grupos = len(grupos)
+        n_sensores_s = self.sensores_del_suelo.longitud
+        n_sensores_t = self.sensores_del_cultivo.longitud
+
+        self.matriz_suelo_reducida = Matriz(n_grupos, n_sensores_s)
+        self.matriz_cultivo_reducida = Matriz(n_grupos, n_sensores_t)
+
+        # Mapeo: estación → grupo
+        grupo_de_estacion = {}
+        for idx, grupo in enumerate(grupos):
+            for id_est in grupo:
+                grupo_de_estacion[id_est] = idx
+
+        # Sumar frecuencias
+        for i in range(self.estaciones.longitud):
+            estacion = self.estaciones.obtener(i)
+            grupo_idx = grupo_de_estacion[estacion.id_estacion]
+
+            for j in range(n_sensores_s):
+                freq = self.matriz_suelo.obtener_frecuencia(i, j)
+                if freq and freq.valor > 0:
+                    actual = self.matriz_suelo_reducida.obtener_frecuencia(grupo_idx, j)
+                    if actual and actual.valor != 0:
+                        actual.valor += freq.valor
+                    else:
+                        self.matriz_suelo_reducida.establecer_frecuencia(grupo_idx, j, Frecuencia(estacion.id_estacion, str(freq.valor)))
+            for j in range(n_sensores_t):
+                freq = self.matriz_cultivo.obtener_frecuencia(i, j)
+                if freq and freq.valor > 0:
+                    actual = self.matriz_cultivo_reducida.obtener_frecuencia(grupo_idx, j)
+                    if actual and actual.valor != 0:
+                        actual.valor += freq.valor
+                    else:
+                        self.matriz_cultivo_reducida.establecer_frecuencia(grupo_idx, j, Frecuencia(estacion.id_estacion, str(freq.valor)))
 
     def visualizar_matrices_graphviz(self):
         if self.matriz_suelo:

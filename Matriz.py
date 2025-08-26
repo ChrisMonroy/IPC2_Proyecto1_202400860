@@ -47,6 +47,16 @@ class Matriz:
                     frecuencia = self.ObtenerFrecuencia(i, j)
                     print(f"{frecuencia.valor}", end="\t")
 
+    def generar_patron(self):
+        patron = ""
+        for i in range(self.filas):
+            for j in range(self.columnas):
+                freq = self.obtener_frecuencia(i, j)
+                valor = freq.valor if freq else 0
+                patron += str(valor) + "_"
+            patron = patron.rstrip("_") + "|"
+        return patron.rstrip("|")
+
     def Graficar(self, titulo, encabezado_filas, encabezado_columnas, nombre_archivo = "matriz_tabla"):
         import graphviz
 
