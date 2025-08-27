@@ -33,6 +33,8 @@ class ListaEnlazada:
         while actual:
             if hasattr(actual.dato, 'id') and actual.dato.id == id_buscar:
                 return indice
+            if hasattr(actual.dato, 'id_estacion') and actual.dato.id_estacion == id_buscar:
+                return indice
             actual = actual.siguiente
             indice += 1
         return -1

@@ -1,12 +1,12 @@
 from ListaSimple import ListaEnlazada
 from Fre import Frecuencia
+import graphviz
 
 class Matriz:
-    def __init__ (self, filas, columnas):
+    def __init__(self, filas, columnas):
         self.filas = filas
         self.columnas = columnas
         self.matriz = ListaEnlazada()
-
         for i in range(filas):
             fila = ListaEnlazada()
             for j in range(columnas):
@@ -14,99 +14,78 @@ class Matriz:
                 fila.insertar(frecuencia)
             self.matriz.insertar(fila)
 
-    def EstablecerFrecuencia(self, filas, columnas, frecuencia):
-        fila = self.matriz.obtener(filas)
-        if fila:
-            # Buscar el nodo en la columna especifica
-            columna = fila.primero
-            for i in range(columnas):
-                if columna:
-                    columna = columna.siguiente
-            if columna:
-                columna.dato = frecuencia
+    def EstablecerFrecuencia(self, fila, columna, frecuencia):
+        fila_lista = self.matriz.obtener(fila)
+        if fila_lista:
+            nodo = fila_lista.primero
+            for _ in range(columna):
+                if nodo:
+                    nodo = nodo.siguiente
+            if nodo:
+                nodo.dato = frecuencia
 
-    def ObtenerFrecuencia(self, filas, columnas):
-        filas = self.matriz.obtener(filas)
-        if filas:
-            return filas.obtener(columnas)
+    def ObtenerFrecuencia(self, fila, columna):
+        fila_lista = self.matriz.obtener(fila)
+        if fila_lista:
+            return fila_lista.obtener(columna)
         return None
 
     def MostrarMatriz(self, titulo, encabezado_filas, encabezado_columnas):
         print(titulo)
-        print("=" * 30)
-        print("Estacion")
-        print("=" * 30)
+        print("=" * 50)
+        print("Estación", end="\t")
         for j in range(self.columnas):
             sensor = encabezado_columnas.obtener(j)
-            print(f"{sensor.id}", end="\t")
-
-            for i in range(self.filas):
-                estacion = encabezado_filas.obtener(i)
-                print(f"{estacion.id}", end="\t\t")
-                for j in range(self.columnas):
-                    frecuencia = self.ObtenerFrecuencia(i, j)
-                    print(f"{frecuencia.valor}", end="\t")
-
-    def generar_patron(self):
-        patron = ""
+            print(f"{sensor.sensor}", end="\t")
+        print()
+        print("-" * 50)
         for i in range(self.filas):
+            estacion = encabezado_filas.obtener(i)
+            print(f"{estacion.id_estacion}", end="\t\t")
             for j in range(self.columnas):
-                freq = self.obtener_frecuencia(i, j)
-                valor = freq.valor if freq else 0
-                patron += str(valor) + "_"
-            patron = patron.rstrip("_") + "|"
-        return patron.rstrip("|")
+                frecuencia = self.ObtenerFrecuencia(i, j)
+                valor = frecuencia.valor if frecuencia else 0
+                print(f"{valor}", end="\t")
+            print()
+        print("=" * 50)
 
-    def Graficar(self, titulo, encabezado_filas, encabezado_columnas, nombre_archivo = "matriz_tabla"):
-        import graphviz
-
+    def Graficar(self, titulo, encabezado_filas, encabezado_columnas, nombre_archivo="matriz_tabla"):
         def esc(s):
-            # Escapa comillas y asegura str
-            return str(s).replace('"', '\\"')
+            return str(s).replace('"', '\\"').replace('<', '<').replace('>', '>')
 
-        # Construir cabecera de columnas
-        th_cols = '<td border="1" bgcolor="#f5f7fa"></td>'  # celda vacía de esquina
+        th_cols = '<td border="1" bgcolor="#f5f7fa"></td>'
         for j in range(self.columnas):
-            sensor = encabezado_columnas.obtener(j)
-            th_cols += f'<td border="1" bgcolor="#f5f7fa"><b>{esc(sensor.id)}</b></td>'
+            sensor = encabezado_columnas.obtener(j) if encabezado_columnas else None
+            sensor_id = sensor.sensor if sensor else f"Sensor_{j+1}"
+            th_cols += f'<td border="1" bgcolor="#f5f7fa"><b>{esc(sensor_id)}</b></td>'
 
         filas_html = ""
         for i in range(self.filas):
-           estacion = encabezado_filas.obtener(i)
-           filas_html += f'<tr><td border="1" bgcolor="#f5f7fa"><b>{esc(estacion.id)}</b></td>'
-        for j in range(self.columnas):
-            frecuencia = self.ObtenerFrecuencia(i, j)
-            valor = esc(frecuencia.valor)
-            # Color de celda según valor
-            bg = "#ffffff" if valor == "0" else "#ffd6d6"  # blanco=0, rosado=>0 (ajustable)
-            filas_html += f'<td border="1" bgcolor="{bg}">{valor}</td>'
-        filas_html += '</tr>'
+            estacion = encabezado_filas.obtener(i) if encabezado_filas else None
+            estacion_id = estacion.id_estacion if estacion else f"Est_{i+1}"
+            filas_html += f'<tr><td border="1" bgcolor="#f5f7fa"><b>{esc(estacion_id)}</b></td>'
+            for j in range(self.columnas):
+                frecuencia = self.ObtenerFrecuencia(i, j)
+                valor = esc(frecuencia.valor) if frecuencia else "0"
+                bg_color = "#ffffff" if valor == "0" else "#ffd6d6"
+                filas_html += f'<td border="1" bgcolor="{bg_color}">{valor}</td>'
+            filas_html += '</tr>'
 
-        # Armar tabla HTML-like
-        tabla = f'''
-          <<table BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <tr><td>
-          <table BORDER="1" CELLBORDER="1" CELLSPACING="0">
-          <tr>{th_cols}</tr>
-              {filas_html}
-          </table>
-          </td></tr>
-          </table>>
+        tabla_html = f'''
+        <<table BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <tr>{th_cols}</tr>
+        {filas_html}
+        </table>>
         '''
 
         dot = graphviz.Digraph(comment=str(titulo))
         dot.attr(rankdir='LR')
-        # Usamos shape=plain para que respete el label HTML
-        dot.node('matriz_tabla', label=tabla, shape='plain')
+        dot.node('tabla', label=tabla_html, shape='plaintext')
+        dot.node('titulo', label=str(titulo), shape='box', style='filled', fillcolor='lightblue')
+        dot.edge('titulo', 'tabla', style='invis')
 
-         # Título como nodo separado arriba (opcional)
-        dot.node('titulo', label=str(titulo), shape='box', style='filled', fillcolor='lightgreen')
-        dot.edge('titulo', 'matriz_tabla', style='invis')  # invisible para ordenar verticalmente
-
-         # Guardar DOT en UTF-8
-        with open(f'{nombre_archivo}.dot', 'w', encoding='utf-8') as f:
-             f.write(dot.source)
-
-        print(f"Archivo DOT generado: {nombre_archivo}.dot")
-        print(f"Para generar PNG: dot -Tpng {nombre_archivo}.dot -o {nombre_archivo}.png")
-        return dot.source
+        try:
+            dot.render(filename=nombre_archivo, format='png', cleanup=True)
+            print(f"Imagen generada: {nombre_archivo}.png")
+        except Exception as e:
+            print(f"Error al generar la imagen: {e}")
