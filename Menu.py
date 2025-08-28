@@ -85,7 +85,6 @@ def main():
             print("Carné: 202400860")
             print("Curso: Introducción a la Programación y Computación 2")
             print("Carrera: Ingeniería en Ciencias y Sistemas")
-            print("GitHub: https://github.com/ChrisMonroy/Proyecto1_IPC2")
             print("=" * 50)
 
         elif opcion == "5":

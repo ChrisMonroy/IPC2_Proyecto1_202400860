@@ -1,3 +1,4 @@
+# Matriz.py
 from ListaSimple import ListaEnlazada
 from Fre import Frecuencia
 import graphviz
@@ -51,14 +52,17 @@ class Matriz:
 
     def Graficar(self, titulo, encabezado_filas, encabezado_columnas, nombre_archivo="matriz_tabla"):
         def esc(s):
-            return str(s).replace('"', '\\"').replace('<', '<').replace('>', '>')
+            # Escapa caracteres críticos para HTML en Graphviz
+            return str(s).replace('"', '\\"').replace('<', '&lt;').replace('>', '&gt;')
 
+        # Cabecera de columnas (sensores)
         th_cols = '<td border="1" bgcolor="#f5f7fa"></td>'
         for j in range(self.columnas):
             sensor = encabezado_columnas.obtener(j) if encabezado_columnas else None
             sensor_id = sensor.sensor if sensor else f"Sensor_{j+1}"
             th_cols += f'<td border="1" bgcolor="#f5f7fa"><b>{esc(sensor_id)}</b></td>'
 
+        # Filas (estaciones)
         filas_html = ""
         for i in range(self.filas):
             estacion = encabezado_filas.obtener(i) if encabezado_filas else None
@@ -71,16 +75,18 @@ class Matriz:
                 filas_html += f'<td border="1" bgcolor="{bg_color}">{valor}</td>'
             filas_html += '</tr>'
 
+        # Tabla HTML completa (sin << >>)
         tabla_html = f'''
-        <<table BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <tr>{th_cols}</tr>
-        {filas_html}
-        </table>>
-        '''
+<table BORDER="0" CELLBORDER="1" CELLSPACING="0">
+<tr>{th_cols}</tr>
+{filas_html}
+</table>
+'''
 
+        # Crear grafo
         dot = graphviz.Digraph(comment=str(titulo))
         dot.attr(rankdir='LR')
-        dot.node('tabla', label=tabla_html, shape='plaintext')
+        dot.node('tabla', label=f'<{tabla_html}>', shape='plaintext')
         dot.node('titulo', label=str(titulo), shape='box', style='filled', fillcolor='lightblue')
         dot.edge('titulo', 'tabla', style='invis')
 
